@@ -139,8 +139,6 @@ function getAllTimers( utcNow, moongate, orderByNext )
 	
 	if ( orderByNext )
 	{
-		var extraCycle = 0;
-		
 		for ( var i = 0; i < 8; ++i )
 		{
 			const moongateDest = moongates[( moongate.gateID + steps ) % moongates.length];
@@ -155,7 +153,11 @@ function getAllTimers( utcNow, moongate, orderByNext )
 			}
 			else
 			{
-				const goal = stepMins[steps] + extraCycle * 120;
+				var goal = stepMins[steps];
+				
+				if ( goal < minsPast2hReal )
+					goal += 120;
+				
 				const timeUntil = goal - minsPast2hReal;
 				const realTimeUntil = Math.ceil( timeUntil * msPerUOMinute / 1000 );
 				
@@ -168,10 +170,7 @@ function getAllTimers( utcNow, moongate, orderByNext )
 			steps = ( steps + 1 ) % stepMins.length;
 			
 			if ( steps == 0 )
-			{
 				steps = 1;
-				++extraCycle;
-			}
 		}
 	}
 	else

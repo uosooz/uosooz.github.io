@@ -12,6 +12,31 @@ body
 	background-color: #333;
 	color: #FFF;
 }
+
+#mapcanvas
+{
+	width: 640px;
+	height: 512px;
+	background-color: #fff;
+	border: 1px solid #000;
+	position: relative;
+	left: 0px;
+	top: 0px;
+}
+
+.mapmarker
+{
+	position: absolute;
+	width: 100px;
+	text-align: center;
+	color: #000;
+}
+
+#footer
+{
+	margin-top: 25px;
+	font-size: 0.9em;
+}
 </style>
 <!-- TODO: Move script to .js file -->
 <script type="text/javascript">
@@ -203,11 +228,21 @@ function doUpdate()
 		const nextMoongate = moongates[( moongate.gateID + steps + 1 ) % moongates.length];
 		
 		if ( firstRun )
+		{
 			document.getElementById( "mg" + i + "_name" ).innerHTML = moongate.name;
+			
+			// Map marker
+			document.getElementById( "mapmg" + i ).style.left = Math.floor( moongate.xLoc / 8 ) - 50 + "px";
+			document.getElementById( "mapmg" + i ).style.top = Math.floor( moongate.yLoc / 8 ) - 5 + "px";
+		}
 		
 		if ( !moongate.lastDestination || moongate.lastDestination != moongateDest.gateID )
 		{
 			document.getElementById( "mg" + i + "_dest" ).innerHTML = moongateDest.name;
+			
+			// Map marker
+			document.getElementById( "mapmg" + i ).innerHTML = "⭕<br>→" + moongateDest.name;
+			
 			moongate.lastDestination = moongateDest.gateID;
 		}
 		
@@ -260,17 +295,19 @@ function resetCheckbox()
 </script>
 </head>
 <body onload="startUpdate(); resetCheckbox()">
+<div id="header">
+<h1>UO Siege Perilous Moongate Monitor</h1>
+</div>
 <div id="settings">
 	<label><input type="checkbox" id="autoUpdate" checked="checked" onchange="changeAutoUpdate()"> Auto update</label>
 	&middot;
 	<input type="button" onclick="doUpdate()" value="Update now">
 	&middot;
 	<label><input type="checkbox" id="singleInTitle" onchange="doUpdate()"> Show single view in window title</label>
-</div>
-	<!-- TODO: Map view? -->
 	<!-- TODO: Save settings in cookie? Only if manually saved by user? "This will store the current settings in a cookie in your browser. Continue?" -->
+</div>
 <div id="overview">
-<h1>Overview</h1>
+<h2>Overview</h2>
 <table>
 <tr>
 <th>Moongate</th>
@@ -320,7 +357,7 @@ function resetCheckbox()
 </table>
 </div>
 <div id="single">
-<h1>Single View</h1>
+<h2>Single View</h2>
 <table>
 <tr>
 <th colspan="2">
@@ -373,6 +410,22 @@ function resetCheckbox()
 <td id="dest7_time"></td>
 </tr>
 </table>
+</div>
+<div id="mapview">
+<h2>Map View</h2>
+<div id="mapcanvas">
+<div id="mapmg0" class="mapmarker"></div>
+<div id="mapmg1" class="mapmarker"></div>
+<div id="mapmg2" class="mapmarker"></div>
+<div id="mapmg3" class="mapmarker"></div>
+<div id="mapmg4" class="mapmarker"></div>
+<div id="mapmg5" class="mapmarker"></div>
+<div id="mapmg6" class="mapmarker"></div>
+<div id="mapmg7" class="mapmarker"></div>
+</div>
+</div>
+<div id="footer">
+Note: Calculations are performed using your system time. If your system time is incorrect, results may vary.
 </div>
 </body>
 </html>

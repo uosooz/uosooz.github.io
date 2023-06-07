@@ -13,7 +13,12 @@ body
 	color: #FFF;
 }
 
-#mapcanvas
+.smalltd
+{
+	font-size: 0.8em;
+}
+
+#mapCanvas
 {
 	width: 640px;
 	height: 512px;
@@ -32,6 +37,17 @@ body
 	color: #000;
 }
 
+a, a:visited, a:hover, a:active
+{
+	color: #fff;
+}
+
+input
+{
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+
 #footer
 {
 	margin-top: 25px;
@@ -40,6 +56,8 @@ body
 </style>
 <!-- TODO: Move script to .js file -->
 <script type="text/javascript">
+const pageTitle = "UOSP Moongate Monitor";
+
 var moongates = [
 	{ name: "Britain", gateID: 0, xLoc: 1336, yLoc: 1997 },
 	{ name: "Moonglow", gateID: 1, xLoc: 4467, yLoc: 1283 },
@@ -147,7 +165,7 @@ function getAllTimers( utcNow, moongate, orderByNext )
 			
 			if ( i == 0 )
 			{
-				document.getElementById( "dest" + i + "_time" ).innerHTML = "(Current destination)";
+				document.getElementById( "dest" + i + "_time" ).innerHTML = "(Currently active)";
 				
 				curDest = moongateDest;
 			}
@@ -164,7 +182,7 @@ function getAllTimers( utcNow, moongate, orderByNext )
 				if ( i == 1 )
 					nextDestTime = realTimeUntil;
 				
-				document.getElementById( "dest" + i + "_time" ).innerHTML = realTimeUntil + "s";
+				document.getElementById( "dest" + i + "_time" ).innerHTML = formatWaitTime( realTimeUntil );
 			}
 			
 			steps = ( steps + 1 ) % stepMins.length;
@@ -179,14 +197,13 @@ function getAllTimers( utcNow, moongate, orderByNext )
 		{
 			const moongateDest = moongates[i];
 			
-			if ( firstRun )
-				document.getElementById( "dest" + i + "_name" ).innerHTML = moongateDest.name;
+			document.getElementById( "dest" + i + "_name" ).innerHTML = moongateDest.name;
 			
 			const destSteps = ( moongateDest.gateID - moongate.gateID + moongates.length ) % moongates.length;
 			
 			if ( destSteps == steps )
 			{
-				document.getElementById( "dest" + i + "_time" ).innerHTML = "(Current destination)";
+				document.getElementById( "dest" + i + "_time" ).innerHTML = "(Currently active)";
 				
 				curDest = moongateDest;
 			}
@@ -203,7 +220,7 @@ function getAllTimers( utcNow, moongate, orderByNext )
 				if ( destSteps == ( steps + 1 ) % moongates.length )
 					nextDestTime = realTimeUntil;
 				
-				document.getElementById( "dest" + i + "_time" ).innerHTML = realTimeUntil + "s";
+				document.getElementById( "dest" + i + "_time" ).innerHTML = formatWaitTime( realTimeUntil );
 			}
 		}
 	}
@@ -212,7 +229,49 @@ function getAllTimers( utcNow, moongate, orderByNext )
 		document.title = moongate.name + "→" + curDest.name + " ⏱ " + nextDestTime + "s";
 }
 
-var firstRun = true;
+var selectedSingle = -1;
+
+function setSelected( i )
+{
+	if ( i >= 0 && i < moongates.length )
+	{
+		selectedSingle = i;
+		
+		document.getElementById( "singleHead" ).innerHTML = "Detailed View: " + moongates[i].name + " Moongate"
+	}
+	else
+	{
+		selectedSingle = -1;
+	}
+	
+	doUpdate();
+	
+	document.getElementById( "detailed" ).style.display = ( selectedSingle >= 0 ) ? "inherit" : "none";
+}
+
+function formatWaitTime( seconds )
+{
+	if ( seconds >= 60 )
+	{
+		/*
+		const minutes = Math.floor( seconds / 60 );
+		seconds %= 60;
+		
+		if ( seconds == 0 )
+			return minutes + " minute" + ( minutes == 1 ? "" : "s" );
+		else
+			return minutes + " minute" + ( minutes == 1 ? "" : "s" ) + ", " + seconds + " second" + ( seconds == 1 ? "" : "s" );
+		*/
+		
+		const minutesRounded = Math.round( seconds / 60 );
+		
+		return minutesRounded + " minute" + ( minutesRounded == 1 ? "" : "s" );
+	}
+	else
+	{
+		return seconds + " second" + ( seconds == 1 ? "" : "s" );
+	}
+}
 
 function doUpdate()
 {
@@ -226,39 +285,21 @@ function doUpdate()
 		const moongateDest = moongates[( moongate.gateID + steps ) % moongates.length];
 		const nextMoongate = moongates[( moongate.gateID + steps + 1 ) % moongates.length];
 		
-		if ( firstRun )
-		{
-			document.getElementById( "mg" + i + "_name" ).innerHTML = moongate.name;
-			
-			// Map marker
-			document.getElementById( "mapmg" + i ).style.left = Math.floor( moongate.xLoc / 8 ) - 50 + "px";
-			document.getElementById( "mapmg" + i ).style.top = Math.floor( moongate.yLoc / 8 ) - 5 + "px";
-		}
-		
 		if ( !moongate.lastDestination || moongate.lastDestination != moongateDest.gateID )
 		{
-			document.getElementById( "mg" + i + "_dest" ).innerHTML = moongateDest.name;
+			document.getElementById( "mg" + i + "_dest" ).innerHTML = "→ " + moongateDest.name;
 			
 			// Map marker
-			document.getElementById( "mapmg" + i ).innerHTML = "⭕<br>→" + moongateDest.name;
+			document.getElementById( "mapmg" + i ).innerHTML = "<a href=\"#detailed\" onclick=\"setSelected( " + i + " )\">⭕</a><br>→ " + moongateDest.name;
 			
 			moongate.lastDestination = moongateDest.gateID;
 		}
 		
-		document.getElementById( "mg" + i + "_next" ).innerHTML = nextMoongate.name + " (" + realSecUntilNext + "s)";
+		document.getElementById( "mg" + i + "_next" ).innerHTML = nextMoongate.name + " in " + formatWaitTime( realSecUntilNext );
 	}
 	
-	if ( firstRun )
-	{
-		for ( var i = 0; i < moongates.length; ++i )
-			document.getElementById( "selectsingle" + i ).innerHTML = moongates[i].name;
-	}
-	
-	const selectedSingle = document.getElementById( "selectsingle" ).value;
-	
-	getAllTimers( utcNow, moongates[selectedSingle], true );
-	
-	firstRun = false;
+	if ( selectedSingle >= 0 )
+		getAllTimers( utcNow, moongates[selectedSingle], true );
 }
 
 var intervalID = -1;
@@ -287,144 +328,138 @@ function changeAutoUpdate()
 		stopUpdate();
 }
 
-function resetCheckbox()
+function singleInTitleChanged( e )
 {
+	if ( e.checked )
+		doUpdate();
+	else
+		document.title = pageTitle; // reset to default
+}
+
+function createElementWithId( tagName, id )
+{
+	var elem = document.createElement( tagName );
+	elem.id = id;
+	return elem;
+}
+
+function build()
+{
+	document.title = pageTitle;
+	
+	var target = null;
+	var elem1 = null;
+	var elem2 = null;
+	
+	// Fill Table View
+	target = document.getElementById( "tableBody" );
+	
+	for ( var i = 0; i < moongates.length; ++i )
+	{
+		elem1 = document.createElement( "tr" );
+		elem1.appendChild( elem2 = createElementWithId( "td", "mg" + i + "_name" ) );
+		elem2.innerHTML = "<a href=\"#detailed\" onclick=\"setSelected( " + i + " )\">" + moongates[i].name + "</a>";
+		elem1.appendChild( createElementWithId( "td", "mg" + i + "_dest" ) );
+		elem1.appendChild( elem2 = createElementWithId( "td", "mg" + i + "_next" ) );
+		elem2.className = "smalltd";
+		target.appendChild( elem1 );
+	}
+	
+	// Fill Map View
+	target = document.getElementById( "mapCanvas" );
+	
+	for ( var i = 0; i < moongates.length; ++i )
+	{
+		elem1 = document.createElement( "div" );
+		elem1.id = "mapmg" + i;
+		elem1.className = "mapmarker";
+		elem1.style.left = Math.floor( moongates[i].xLoc / 8 ) - 50 + "px";
+		elem1.style.top = Math.floor( moongates[i].yLoc / 8 ) - 5 + "px";
+		target.appendChild( elem1 );
+	}
+	
+	// Fill Detailed View
+	target = document.getElementById( "singleBody" );
+	
+	for ( var i = 0; i < moongates.length; ++i )
+	{
+		elem1 = document.createElement( "tr" );
+		elem1.appendChild( createElementWithId( "td", "dest" + i + "_name" ) );
+		elem1.appendChild( createElementWithId( "td", "dest" + i + "_time" ) );
+		target.appendChild( elem1 );
+	}
+	
+	// Reset settings to default
 	document.getElementById( "autoUpdate" ).checked = "checked";
+	document.getElementById( "viewModeTable" ).checked = "checked";
+	document.getElementById( "viewModeMap" ).checked = "";
+}
+
+function setViewMode( mode )
+{
+	document.getElementById( "overview" ).style.display = ( mode == 0 ) ? "inherit" : "none";
+	document.getElementById( "mapView" ).style.display = ( mode == 1 ) ? "inherit" : "none";
 }
 </script>
 </head>
-<body onload="startUpdate(); resetCheckbox()">
+<body onload="build(); startUpdate(); resetCheckbox()">
+
 <div id="header">
 <h1>UO Siege Perilous Moongate Monitor</h1>
 </div>
+
 <div id="settings">
 	<label><input type="checkbox" id="autoUpdate" checked="checked" onchange="changeAutoUpdate()"> Auto update</label>
 	&middot;
 	<input type="button" onclick="doUpdate()" value="Update now">
-	&middot;
-	<label><input type="checkbox" id="singleInTitle" onchange="doUpdate()"> Show single view in window title</label>
+	<br>
+	<label><input type="radio" id="viewModeTable" name="viewMode" value="0" onchange="setViewMode( 0 )" checked="checked"> Table View</label> <label><input type="radio" id="viewModeMap" name="viewMode" value="1" onchange="setViewMode( 1 )"> Map View</label>
 	<!-- TODO: Save settings in cookie? Only if manually saved by user? "This will store the current settings in a cookie in your browser. Continue?" -->
 </div>
+
 <div id="overview">
-<h2>Overview</h2>
+<h2>Table View</h2>
 <table>
+<thead>
 <tr>
 <th>Moongate</th>
 <th>Destination</th>
 <th>Next</th>
 </tr>
-<tr>
-<td id="mg0_name"></td>
-<td id="mg0_dest"></td>
-<td id="mg0_next"></td>
-</tr>
-<tr>
-<td id="mg1_name"></td>
-<td id="mg1_dest"></td>
-<td id="mg1_next"></td>
-</tr>
-<tr>
-<td id="mg2_name"></td>
-<td id="mg2_dest"></td>
-<td id="mg2_next"></td>
-</tr>
-<tr>
-<td id="mg3_name"></td>
-<td id="mg3_dest"></td>
-<td id="mg3_next"></td>
-</tr>
-<tr>
-<td id="mg4_name"></td>
-<td id="mg4_dest"></td>
-<td id="mg4_next"></td>
-</tr>
-<tr>
-<td id="mg5_name"></td>
-<td id="mg5_dest"></td>
-<td id="mg5_next"></td>
-</tr>
-<tr>
-<td id="mg6_name"></td>
-<td id="mg6_dest"></td>
-<td id="mg6_next"></td>
-</tr>
-<tr>
-<td id="mg7_name"></td>
-<td id="mg7_dest"></td>
-<td id="mg7_next"></td>
-</tr>
+</thead>
+<tbody id="tableBody">
+</tbody>
 </table>
 </div>
-<div id="single">
-<h2>Single View</h2>
-<table>
-<tr>
-<th colspan="2">
-<select id="selectsingle" onchange="doUpdate()">
-<option id="selectsingle0" value="0"></option>
-<option id="selectsingle1" value="1"></option>
-<option id="selectsingle2" value="2"></option>
-<option id="selectsingle3" value="3"></option>
-<option id="selectsingle4" value="4"></option>
-<option id="selectsingle5" value="5"></option>
-<option id="selectsingle6" value="6"></option>
-<option id="selectsingle7" value="7"></option>
-</select>
-</th>
-</tr>
-<tr>
-<th>Destination</th>
-<th>Time until</th>
-</tr>
-<tr>
-<td id="dest0_name"></td>
-<td id="dest0_time"></td>
-</tr>
-<tr>
-<td id="dest1_name"></td>
-<td id="dest1_time"></td>
-</tr>
-<tr>
-<td id="dest2_name"></td>
-<td id="dest2_time"></td>
-</tr>
-<tr>
-<td id="dest3_name"></td>
-<td id="dest3_time"></td>
-</tr>
-<tr>
-<td id="dest4_name"></td>
-<td id="dest4_time"></td>
-</tr>
-<tr>
-<td id="dest5_name"></td>
-<td id="dest5_time"></td>
-</tr>
-<tr>
-<td id="dest6_name"></td>
-<td id="dest6_time"></td>
-</tr>
-<tr>
-<td id="dest7_name"></td>
-<td id="dest7_time"></td>
-</tr>
-</table>
-</div>
-<div id="mapview">
+
+<div id="mapView" style="display: none">
 <h2>Map View</h2>
-<div id="mapcanvas">
-<div id="mapmg0" class="mapmarker"></div>
-<div id="mapmg1" class="mapmarker"></div>
-<div id="mapmg2" class="mapmarker"></div>
-<div id="mapmg3" class="mapmarker"></div>
-<div id="mapmg4" class="mapmarker"></div>
-<div id="mapmg5" class="mapmarker"></div>
-<div id="mapmg6" class="mapmarker"></div>
-<div id="mapmg7" class="mapmarker"></div>
+<div id="mapCanvas">
 </div>
 </div>
+
+<div id="detailed" style="display: none">
+<h2 id="singleHead">Detailed View: Britain Moongate</h2>
+<label><input type="checkbox" id="singleInTitle" onchange="singleInTitleChanged( this )"> Show in window title</label>
+<table>
+<thead>
+<tr>
+<!-- TODO: Flip it so it becomes a horizontal table? -->
+<th>Destination</th>
+<th>Time until active</th>
+</tr>
+</thead>
+<tbody id="singleBody">
+</tbody>
+</table>
+<input type="button" value="Close detailed view" onclick="setSelected( -1 )">
+</div>
+
 <div id="footer">
+Click on a moongate to see all upcoming destinations.
+<br><br>
 Note: Calculations are performed using your system time. If your system time is incorrect, results may vary.
 </div>
+
 </body>
 </html>

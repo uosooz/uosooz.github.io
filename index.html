@@ -2,15 +2,57 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<!-- TODO: Meta tags for Discord embedding? -->
-<!-- TODO: Viewport tags for mobile -->
-<title></title>
+<title>UO:SP Moongate Monitor</title>
+<meta name="viewport" content="width=650, initial-scale=1">
+<meta property="og:title" content="UO:SP Moongate Monitor">
+<meta property="og:description" content="View the moongate destination cycles of UO:Siege Perilous in real-time.">
+<meta property="og:image" content="https://uosooz.github.io/images/uosp_logo.png">
 <!-- TODO: Move style to .css file -->
 <style type="text/css">
 body
 {
 	background-color: #333;
 	color: #FFF;
+}
+
+#header > div
+{
+	display: inline-block;
+	vertical-align: middle;
+}
+
+#splogo
+{
+	height: 50px;
+	margin-right: 5px;
+}
+
+.settings
+{
+	margin-bottom: 10px;
+}
+
+table
+{
+	border: 2px solid #fff;
+	border-collapse: collapse;
+}
+
+th, td
+{
+	text-align: left;
+	padding: 5px;
+}
+
+th
+{
+	border: 2px solid #fff;
+	background-color: rgba(0, 0, 0, 0.3);
+}
+
+td
+{
+	border: 1px solid #fff;
 }
 
 .smalltd
@@ -22,8 +64,7 @@ body
 {
 	width: 640px;
 	height: 512px;
-	background-color: #fff;
-	border: 1px solid #000;
+	background: #fff url(images/felucca.png) 0 0 no-repeat;
 	position: relative;
 	left: 0px;
 	top: 0px;
@@ -34,7 +75,8 @@ body
 	position: absolute;
 	width: 100px;
 	text-align: center;
-	color: #000;
+	color: #fff;
+	text-shadow: -1px -1px 1px #000, -1px 1px 1px #000, 1px -1px 1px #000, 1px 1px 1px #000;
 }
 
 a, a:visited, a:hover, a:active
@@ -56,8 +98,6 @@ input
 </style>
 <!-- TODO: Move script to .js file -->
 <script type="text/javascript">
-const pageTitle = "UOSP Moongate Monitor";
-
 var moongates = [
 	{ name: "Britain", gateID: 0, xLoc: 1336, yLoc: 1997 },
 	{ name: "Moonglow", gateID: 1, xLoc: 4467, yLoc: 1283 },
@@ -237,7 +277,7 @@ function setSelected( i )
 	{
 		selectedSingle = i;
 		
-		document.getElementById( "singleHead" ).innerHTML = "Detailed View: " + moongates[i].name + " Moongate"
+		document.getElementById( "singleHead" ).innerHTML = moongates[i].name + " Moongate"
 	}
 	else
 	{
@@ -263,7 +303,7 @@ function formatWaitTime( seconds )
 			return minutes + " minute" + ( minutes == 1 ? "" : "s" ) + ", " + seconds + " second" + ( seconds == 1 ? "" : "s" );
 		*/
 		
-		const minutesRounded = Math.round( seconds / 60 );
+		const minutesRounded = Math.ceil( seconds / 60 );
 		
 		return minutesRounded + " minute" + ( minutesRounded == 1 ? "" : "s" );
 	}
@@ -290,7 +330,7 @@ function doUpdate()
 			document.getElementById( "mg" + i + "_dest" ).innerHTML = "→ " + moongateDest.name;
 			
 			// Map marker
-			document.getElementById( "mapmg" + i ).innerHTML = "<a href=\"#detailed\" onclick=\"setSelected( " + i + " )\">⭕</a><br>→ " + moongateDest.name;
+			document.getElementById( "mapmg" + i + "_dest" ).innerHTML = "→ " + moongateDest.name;
 			
 			moongate.lastDestination = moongateDest.gateID;
 		}
@@ -333,7 +373,7 @@ function singleInTitleChanged( e )
 	if ( e.checked )
 		doUpdate();
 	else
-		document.title = pageTitle; // reset to default
+		document.title = "UO:SP Moongate Monitor"; // reset to default
 }
 
 function createElementWithId( tagName, id )
@@ -345,8 +385,6 @@ function createElementWithId( tagName, id )
 
 function build()
 {
-	document.title = pageTitle;
-	
 	var target = null;
 	var elem1 = null;
 	var elem2 = null;
@@ -374,7 +412,8 @@ function build()
 		elem1.id = "mapmg" + i;
 		elem1.className = "mapmarker";
 		elem1.style.left = Math.floor( moongates[i].xLoc / 8 ) - 50 + "px";
-		elem1.style.top = Math.floor( moongates[i].yLoc / 8 ) - 5 + "px";
+		elem1.style.top = Math.floor( moongates[i].yLoc / 8 ) - 10 + "px";
+		elem1.innerHTML = "<div><a href=\"#detailed\" onclick=\"setSelected( " + i + " )\"><img src=\"images/moongate.png\" alt=\"" + moongates[i].name + "\"></a></div><div id=\"mapmg" + i + "_dest\"></div>";
 		target.appendChild( elem1 );
 	}
 	
@@ -405,26 +444,29 @@ function setViewMode( mode )
 <body onload="build(); startUpdate(); resetCheckbox()">
 
 <div id="header">
-<h1>UO Siege Perilous Moongate Monitor</h1>
+<div>
+<img id="splogo" src="images/uosp_logo.png">
+</div>
+<div>
+<h1>UO:Siege Perilous Moongate Monitor</h1>
+</div>
 </div>
 
-<div id="settings">
+<div class="settings">
 	<label><input type="checkbox" id="autoUpdate" checked="checked" onchange="changeAutoUpdate()"> Auto update</label>
 	&middot;
 	<input type="button" onclick="doUpdate()" value="Update now">
 	<br>
 	<label><input type="radio" id="viewModeTable" name="viewMode" value="0" onchange="setViewMode( 0 )" checked="checked"> Table View</label> <label><input type="radio" id="viewModeMap" name="viewMode" value="1" onchange="setViewMode( 1 )"> Map View</label>
-	<!-- TODO: Save settings in cookie? Only if manually saved by user? "This will store the current settings in a cookie in your browser. Continue?" -->
 </div>
 
 <div id="overview">
-<h2>Table View</h2>
-<table>
+<table width="640">
 <thead>
 <tr>
-<th>Moongate</th>
-<th>Destination</th>
-<th>Next</th>
+<th width="30%">Moongate</th>
+<th width="30%">Destination</th>
+<th width="40%">Upcoming</th>
 </tr>
 </thead>
 <tbody id="tableBody">
@@ -433,32 +475,34 @@ function setViewMode( mode )
 </div>
 
 <div id="mapView" style="display: none">
-<h2>Map View</h2>
 <div id="mapCanvas">
 </div>
 </div>
 
+<div>
+<p>Click on a moongate to see all upcoming destinations.</p>
+</div>
+
 <div id="detailed" style="display: none">
-<h2 id="singleHead">Detailed View: Britain Moongate</h2>
+<h2 id="singleHead"></h2>
+<div class="settings">
+<input type="button" value="Close" onclick="setSelected( -1 )">
 <label><input type="checkbox" id="singleInTitle" onchange="singleInTitleChanged( this )"> Show in window title</label>
-<table>
+</div>
+<table width="320">
 <thead>
 <tr>
-<!-- TODO: Flip it so it becomes a horizontal table? -->
-<th>Destination</th>
-<th>Time until active</th>
+<th width="50%">Destination</th>
+<th width="50%">Time until active</th>
 </tr>
 </thead>
 <tbody id="singleBody">
 </tbody>
 </table>
-<input type="button" value="Close detailed view" onclick="setSelected( -1 )">
 </div>
 
 <div id="footer">
-Click on a moongate to see all upcoming destinations.
-<br><br>
-Note: Calculations are performed using your system time. If your system time is incorrect, results may vary.
+<p>Calculations are performed using system time. Ensure your system time is correct for accurate results.</p>
 </div>
 
 </body>

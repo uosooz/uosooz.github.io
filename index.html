@@ -15,6 +15,11 @@ body
 	color: #FFF;
 }
 
+html, body
+{
+	scroll-behavior: smooth;
+}
+
 #header > div
 {
 	display: inline-block;
@@ -286,7 +291,18 @@ function setSelected( i )
 	
 	doUpdate();
 	
-	document.getElementById( "detailed" ).style.display = ( selectedSingle >= 0 ) ? "inherit" : "none";
+	const detailedDiv = document.getElementById( "detailed" );
+	
+	if ( selectedSingle >= 0 )
+	{
+		detailedDiv.style.display = "inherit";
+		detailedDiv.scrollIntoView();
+	}
+	else
+	{
+		detailedDiv.style.display = "none";
+		setTimeout("window.scrollTo( 0, 0 )", 1);
+	}
 }
 
 function formatWaitTime( seconds )
@@ -396,7 +412,7 @@ function build()
 	{
 		elem1 = document.createElement( "tr" );
 		elem1.appendChild( elem2 = createElementWithId( "td", "mg" + i + "_name" ) );
-		elem2.innerHTML = "<a href=\"#detailed\" onclick=\"setSelected( " + i + " )\">" + moongates[i].name + "</a>";
+		elem2.innerHTML = "<a href=\"#\" onclick=\"setSelected( " + i + " ); return false;\">" + moongates[i].name + "</a>";
 		elem1.appendChild( createElementWithId( "td", "mg" + i + "_dest" ) );
 		elem1.appendChild( elem2 = createElementWithId( "td", "mg" + i + "_next" ) );
 		elem2.className = "smalltd";
@@ -413,7 +429,7 @@ function build()
 		elem1.className = "mapmarker";
 		elem1.style.left = Math.floor( moongates[i].xLoc / 8 ) - 50 + "px";
 		elem1.style.top = Math.floor( moongates[i].yLoc / 8 ) - 10 + "px";
-		elem1.innerHTML = "<div><a href=\"#detailed\" onclick=\"setSelected( " + i + " )\"><img src=\"images/moongate.png\" alt=\"" + moongates[i].name + "\"></a></div><div id=\"mapmg" + i + "_dest\"></div>";
+		elem1.innerHTML = "<div><a href=\"#\" onclick=\"setSelected( " + i + " ); return false;\"><img src=\"images/moongate.png\" alt=\"" + moongates[i].name + "\"></a></div><div id=\"mapmg" + i + "_dest\"></div>";
 		target.appendChild( elem1 );
 	}
 	
@@ -441,7 +457,7 @@ function setViewMode( mode )
 }
 </script>
 </head>
-<body onload="build(); startUpdate(); resetCheckbox()">
+<body onload="build(); startUpdate()">
 
 <div id="header">
 <div>

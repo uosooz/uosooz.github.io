@@ -13,6 +13,8 @@ body
 {
 	background-color: #333;
 	color: #FFF;
+	font-family: sans-serif;
+	font-size: 0.95em;
 }
 
 html, body
@@ -287,6 +289,9 @@ function setSelected( i )
 	else
 	{
 		selectedSingle = -1;
+		
+		if ( document.getElementById( "singleInTitle" ).checked )
+			document.title = "UO:SP Moongate Monitor"; // reset to default
 	}
 	
 	doUpdate();

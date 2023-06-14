@@ -97,7 +97,14 @@ input
 	margin-bottom: 5px;
 }
 
-#footer
+.text
+{
+	background: transparent;
+	border: none;
+	color: #fff;
+}
+
+.footer
 {
 	margin-top: 25px;
 	font-size: 0.9em;
@@ -310,6 +317,11 @@ function setSelected( i )
 	}
 }
 
+function pluralize( amount, unit )
+{
+	return amount + " " + unit + ( amount == 1 ? "" : "s" );
+}
+
 function formatWaitTime( seconds )
 {
 	if ( seconds >= 60 )
@@ -324,13 +336,11 @@ function formatWaitTime( seconds )
 			return minutes + " minute" + ( minutes == 1 ? "" : "s" ) + ", " + seconds + " second" + ( seconds == 1 ? "" : "s" );
 		*/
 		
-		const minutesRounded = Math.ceil( seconds / 60 );
-		
-		return minutesRounded + " minute" + ( minutesRounded == 1 ? "" : "s" );
+		return pluralize( Math.ceil( seconds / 60 ), "minute" );
 	}
 	else
 	{
-		return seconds + " second" + ( seconds == 1 ? "" : "s" );
+		return pluralize( seconds, "second" );
 	}
 }
 
@@ -361,6 +371,8 @@ function doUpdate()
 	
 	if ( selectedSingle >= 0 )
 		getAllTimers( utcNow, moongates[selectedSingle], true );
+	
+	updateRoT();
 }
 
 var intervalID = -1;
@@ -453,12 +465,152 @@ function build()
 	document.getElementById( "autoUpdate" ).checked = "checked";
 	document.getElementById( "viewModeTable" ).checked = "checked";
 	document.getElementById( "viewModeMap" ).checked = "";
+	document.getElementById( "viewModeROT" ).checked = "";
+	
+	// RoT Tracker
+	target = document.getElementById( "rotTimerList" );
+	
+	for ( var i = 0; i < 10; ++i )
+	{
+		elem1 = document.createElement( "div" );
+		elem1.innerHTML = "<input id=\"timer" + i + "_name\" type=\"text\" maxlength=\"40\"> <input type=\"button\" value=\"Set Name\" onclick=\"setRoTName( " + i + " )\"> <input type=\"button\" value=\"Clear\" onclick=\"clearRoT( " + i + " )\"> <input type=\"button\" value=\"Refresh\" onclick=\"refreshRoT( " + i + " )\"> <input type=\"text\" class=\"text\" id=\"timer" + i + "_value\" readonly=\"readonly\">";
+		target.appendChild( elem1 );
+	}
+	
+	loadRoT();
 }
 
 function setViewMode( mode )
 {
 	document.getElementById( "overview" ).style.display = ( mode == 0 ) ? "inherit" : "none";
 	document.getElementById( "mapView" ).style.display = ( mode == 1 ) ? "inherit" : "none";
+	document.getElementById( "moongatesExtra" ).style.display = ( mode == 0 || mode == 1 ) ? "inherit" : "none";
+	document.getElementById( "rotView" ).style.display = ( mode == 2 ) ? "inherit" : "none";
+}
+
+var rotTimers = [];
+
+function loadRoT()
+{
+	if ( window.localStorage )
+	{
+		try
+		{
+			const objVal = window.localStorage.getItem( "rotTimers" );
+			
+			if ( objVal )
+			{
+				rotTimers = JSON.parse( objVal );
+				
+				for ( var i = 0; i < rotTimers.length; ++i )
+				{
+					if ( !rotTimers[i] )
+						continue;
+					
+					const elem = document.getElementById( "timer" + i + "_name" );
+					
+					if ( elem )
+						elem.value = rotTimers[i].name;
+				}
+			}
+		}
+		catch
+		{
+		}
+		
+		if ( rotTimers == null || rotTimers.length == undefined )
+			rotTimers = [];
+	}
+}
+
+function saveRoT()
+{
+	if ( window.localStorage )
+		window.localStorage.setItem( "rotTimers", JSON.stringify( rotTimers ) );
+}
+
+function setRoTName( index )
+{
+	const newName = document.getElementById( "timer" + index + "_name" ).value;
+	
+	if ( !rotTimers[index] )
+		rotTimers[index] = { "name": newName, "last": 0 };
+	else
+		rotTimers[index].name = newName;
+	
+	saveRoT();
+}
+
+function clearRoT( index )
+{
+	rotTimers[index] = null;
+	
+	document.getElementById( "timer" + index + "_name" ).value = "";
+	document.getElementById( "timer" + index + "_value" ).value = "";
+	
+	saveRoT();
+}
+
+function refreshRoT( index )
+{
+	const newName = document.getElementById( "timer" + index + "_name" ).value;
+	const newLast = new Date().valueOf();
+	
+	if ( !rotTimers[index] )
+	{
+		rotTimers[index] = { "name": newName, "last": newLast };
+	}
+	else
+	{
+		rotTimers[index].name = newName;
+		rotTimers[index].last = newLast;
+	}
+	
+	updateRoT();
+	saveRoT();
+}
+
+function formatRoTTime( seconds )
+{
+	if ( seconds >= 3600 )
+	{
+		const hours = Math.floor( seconds / 3600 );
+		return [ hours + "h", pluralize( hours, "hour" ) ];
+	}
+	else if ( seconds >= 60 )
+	{
+		const mins = Math.floor( seconds / 60 );
+		return [ mins + "m", pluralize( mins, "minute" ) ];
+	}
+	else
+	{
+		const secs = Math.floor( seconds );
+		return [ secs + "s", pluralize( secs, "second" ) ];
+	}
+}
+
+function updateRoT()
+{
+	const now = new Date();
+	
+	for ( var i = 0; i < rotTimers.length; ++i )
+	{
+		if ( !rotTimers[i] )
+			continue;
+		
+		const elem = document.getElementById( "timer" + i + "_value" );
+		
+		if ( elem && rotTimers[i].last > 0 )
+		{
+			const [ timeCode, timeText ] = formatRoTTime( ( now - rotTimers[i].last ) / 1000 );
+			
+			if ( !elem.dataset.lastTime || elem.dataset.lastTime != timeCode )
+			{
+				elem.dataset.lastTime = timeCode;
+				elem.value = timeText + " ago";
+			}
+		}
+	}
 }
 </script>
 </head>
@@ -478,7 +630,7 @@ function setViewMode( mode )
 	&middot;
 	<input type="button" onclick="doUpdate()" value="Update now">
 	<br>
-	<label><input type="radio" id="viewModeTable" name="viewMode" value="0" onchange="setViewMode( 0 )" checked="checked"> Table View</label> <label><input type="radio" id="viewModeMap" name="viewMode" value="1" onchange="setViewMode( 1 )"> Map View</label>
+	<label><input type="radio" id="viewModeTable" name="viewMode" value="0" onchange="setViewMode( 0 )" checked="checked"> Table View</label> <label><input type="radio" id="viewModeMap" name="viewMode" value="1" onchange="setViewMode( 1 )"> Map View</label> <label><input type="radio" id="viewModeROT" name="viewMode" value="2" onchange="setViewMode( 2 )"> RoT Tracker</label>
 </div>
 
 <div id="overview">
@@ -500,6 +652,7 @@ function setViewMode( mode )
 </div>
 </div>
 
+<div id="moongatesExtra">
 <div>
 <p>Click on a moongate to see all upcoming destinations.</p>
 </div>
@@ -522,8 +675,23 @@ function setViewMode( mode )
 </table>
 </div>
 
-<div id="footer">
+<div class="footer">
 <p>Calculations are performed using system time. Ensure your system time is correct for accurate results.</p>
+</div>
+</div>
+
+<div id="rotView" style="display: none">
+<div id="rotTimerList">
+</div>
+
+<div>
+<p>Keep track of your Return Over Time (RoT) delays using the timers above.</p>
+</div>
+
+<div class="footer">
+<p>0-69.9: No delay<br>70-79.9: 20 minute delay<br>80-98.9: 40 minute delay<br>99-100: 60 minute delay</p>
+<p>Timer data is saved locally in your browser.</p>
+</div>
 </div>
 
 </body>

@@ -148,28 +148,28 @@ const msPerUOMinute = 5000;
 function getGameTime( utcNow, xLoc )
 {
 	const elapsedMs = utcNow - worldStart;
-	
+
 	var totalMinutes = elapsedMs / msPerUOMinute;
-	
+
 	//totalMinutes += mapIndex * 320;
 	totalMinutes += Math.floor( xLoc / 16 );
-	
+
 	const totalMinutesInt = Math.floor( totalMinutes );
 	const hours = Math.floor( totalMinutesInt / 60 ) % 24;
 	const mins = totalMinutesInt % 60;
-	
+
 	return [ totalMinutes, hours, mins ];
 }
 
 function formatTime( hours, mins )
 {
 	const isAM = ( hours < 12 );
-	
+
 	if ( hours == 0 )
 		hours = 12;
 	else if ( hours > 12 )
 		hours -= 12;
-	
+
 	return hours + ":" + ( mins < 10 ? "0" + mins : mins ) + ( isAM ? " AM" : " PM" );
 }
 
@@ -179,7 +179,7 @@ function getSteps( totalMinutes, hours, mins )
 {
 	const minsPast2h = ( hours % 2 ) * 60 + mins;
 	var result = 0;
-	
+
 	for ( var i = stepMins.length - 1; i >= 0; --i )
 	{
 		if ( minsPast2h >= stepMins[i] )
@@ -188,20 +188,20 @@ function getSteps( totalMinutes, hours, mins )
 			break;
 		}
 	}
-	
+
 	result %= 8;
-	
+
 	// Time until next
 	const nextStepMins = stepMins[result + 1];
 	var minsUntilNext = nextStepMins - minsPast2h;
-	
+
 	if ( minsUntilNext < 0 )
 		minsUntilNext += 120;
-	
+
 	const totalMinutesNext = Math.floor( totalMinutes ) + minsUntilNext;
 	const minsUntilNextReal = totalMinutesNext - totalMinutes;
 	const realSecUntilNext = Math.ceil( minsUntilNextReal * msPerUOMinute / 1000 );
-	
+
 	return [ result, realSecUntilNext ];
 }
 
@@ -210,7 +210,7 @@ function getAllTimers( utcNow, moongate, orderByNext )
 	const [ totalMinutes, hours, mins ] = getGameTime( utcNow, moongate.xLoc );
 	const minsPast2h = ( hours % 2 ) * 60 + mins;
 	var steps = 0;
-	
+
 	for ( var i = stepMins.length - 1; i >= 0; --i )
 	{
 		if ( minsPast2h >= stepMins[i] )
@@ -219,47 +219,47 @@ function getAllTimers( utcNow, moongate, orderByNext )
 			break;
 		}
 	}
-	
+
 	steps %= 8;
-	
+
 	const minsPast2hReal = totalMinutes % 120;
 	const showInTitle = document.getElementById( "singleInTitle" ).checked;
-	
+
 	var curDest = null;
 	var nextDestTime = 0;
-	
+
 	if ( orderByNext )
 	{
 		for ( var i = 0; i < 8; ++i )
 		{
 			const moongateDest = moongates[( moongate.gateID + steps ) % moongates.length];
-			
+
 			document.getElementById( "dest" + i + "_name" ).innerHTML = moongateDest.name;
-			
+
 			if ( i == 0 )
 			{
 				document.getElementById( "dest" + i + "_time" ).innerHTML = "(Currently active)";
-				
+
 				curDest = moongateDest;
 			}
 			else
 			{
 				var goal = stepMins[steps];
-				
+
 				if ( goal < minsPast2hReal )
 					goal += 120;
-				
+
 				const timeUntil = goal - minsPast2hReal;
 				const realTimeUntil = Math.ceil( timeUntil * msPerUOMinute / 1000 );
-				
+
 				if ( i == 1 )
 					nextDestTime = realTimeUntil;
-				
+
 				document.getElementById( "dest" + i + "_time" ).innerHTML = formatWaitTime( realTimeUntil );
 			}
-			
+
 			steps = ( steps + 1 ) % stepMins.length;
-			
+
 			if ( steps == 0 )
 				steps = 1;
 		}
@@ -269,35 +269,35 @@ function getAllTimers( utcNow, moongate, orderByNext )
 		for ( var i = 0; i < moongates.length; ++i )
 		{
 			const moongateDest = moongates[i];
-			
+
 			document.getElementById( "dest" + i + "_name" ).innerHTML = moongateDest.name;
-			
+
 			const destSteps = ( moongateDest.gateID - moongate.gateID + moongates.length ) % moongates.length;
-			
+
 			if ( destSteps == steps )
 			{
 				document.getElementById( "dest" + i + "_time" ).innerHTML = "(Currently active)";
-				
+
 				curDest = moongateDest;
 			}
 			else
 			{
 				var goal = ( destSteps == 0 ) ? stepMins[stepMins.length - 1] : stepMins[destSteps];
-				
+
 				if ( goal < minsPast2hReal )
 					goal += 120;
-				
+
 				const timeUntil = goal - minsPast2hReal;
 				const realTimeUntil = Math.ceil( timeUntil * msPerUOMinute / 1000 );
-				
+
 				if ( destSteps == ( steps + 1 ) % moongates.length )
 					nextDestTime = realTimeUntil;
-				
+
 				document.getElementById( "dest" + i + "_time" ).innerHTML = formatWaitTime( realTimeUntil );
 			}
 		}
 	}
-	
+
 	if ( showInTitle )
 		document.title = moongate.name + "→" + curDest.name + " ⏱ " + nextDestTime + "s";
 }
@@ -309,21 +309,21 @@ function setSelected( i )
 	if ( i >= 0 && i < moongates.length )
 	{
 		selectedSingle = i;
-		
+
 		document.getElementById( "singleHead" ).innerHTML = moongates[i].name + " Moongate"
 	}
 	else
 	{
 		selectedSingle = -1;
-		
+
 		if ( document.getElementById( "singleInTitle" ).checked )
 			document.title = "UO:SP Moongate Monitor"; // reset to default
 	}
-	
+
 	doUpdate();
-	
+
 	const detailedDiv = document.getElementById( "detailed" );
-	
+
 	if ( selectedSingle >= 0 )
 	{
 		detailedDiv.style.display = "inherit";
@@ -348,13 +348,13 @@ function formatWaitTime( seconds )
 		/*
 		const minutes = Math.floor( seconds / 60 );
 		seconds %= 60;
-		
+
 		if ( seconds == 0 )
 			return minutes + " minute" + ( minutes == 1 ? "" : "s" );
 		else
 			return minutes + " minute" + ( minutes == 1 ? "" : "s" ) + ", " + seconds + " second" + ( seconds == 1 ? "" : "s" );
 		*/
-		
+
 		return pluralize( Math.ceil( seconds / 60 ), "minute" );
 	}
 	else
@@ -366,7 +366,7 @@ function formatWaitTime( seconds )
 function doUpdate()
 {
 	const utcNow = new Date().getTime();
-	
+
 	for ( var i = 0; i < moongates.length; ++i )
 	{
 		const moongate = moongates[i];
@@ -374,23 +374,23 @@ function doUpdate()
 		const [ steps, realSecUntilNext ] = getSteps( totalMinutes, hours, mins );
 		const moongateDest = moongates[( moongate.gateID + steps ) % moongates.length];
 		const nextMoongate = moongates[( moongate.gateID + steps + 1 ) % moongates.length];
-		
+
 		if ( !moongate.lastDestination || moongate.lastDestination != moongateDest.gateID )
 		{
 			document.getElementById( "mg" + i + "_dest" ).innerHTML = "→ " + moongateDest.name;
-			
+
 			// Map marker
 			document.getElementById( "mapmg" + i + "_dest" ).innerHTML = "→ " + moongateDest.name;
-			
+
 			moongate.lastDestination = moongateDest.gateID;
 		}
-		
+
 		document.getElementById( "mg" + i + "_next" ).innerHTML = nextMoongate.name + " in " + formatWaitTime( realSecUntilNext );
 	}
-	
+
 	if ( selectedSingle >= 0 )
 		getAllTimers( utcNow, moongates[selectedSingle], true );
-	
+
 	updateRoT();
 }
 
@@ -399,7 +399,7 @@ var intervalID = -1;
 function startUpdate()
 {
 	doUpdate();
-	
+
 	if ( intervalID == -1 )
 		intervalID = setInterval( "doUpdate()", 1000 );
 }
@@ -440,10 +440,10 @@ function build()
 	var target = null;
 	var elem1 = null;
 	var elem2 = null;
-	
+
 	// Fill Table View
 	target = document.getElementById( "tableBody" );
-	
+
 	for ( var i = 0; i < moongates.length; ++i )
 	{
 		elem1 = document.createElement( "tr" );
@@ -454,10 +454,10 @@ function build()
 		elem2.className = "smalltd";
 		target.appendChild( elem1 );
 	}
-	
+
 	// Fill Map View
 	target = document.getElementById( "mapCanvas" );
-	
+
 	for ( var i = 0; i < moongates.length; ++i )
 	{
 		elem1 = document.createElement( "div" );
@@ -468,10 +468,10 @@ function build()
 		elem1.innerHTML = "<div><a href=\"#\" onclick=\"setSelected( " + i + " ); return false;\"><img src=\"images/moongate.png\" alt=\"" + moongates[i].name + "\"></a></div><div id=\"mapmg" + i + "_dest\"></div>";
 		target.appendChild( elem1 );
 	}
-	
+
 	// Fill Detailed View
 	target = document.getElementById( "singleBody" );
-	
+
 	for ( var i = 0; i < moongates.length; ++i )
 	{
 		elem1 = document.createElement( "tr" );
@@ -479,23 +479,23 @@ function build()
 		elem1.appendChild( createElementWithId( "td", "dest" + i + "_time" ) );
 		target.appendChild( elem1 );
 	}
-	
+
 	// Reset settings to default
 	document.getElementById( "autoUpdate" ).checked = "checked";
 	document.getElementById( "viewModeTable" ).checked = "checked";
 	document.getElementById( "viewModeMap" ).checked = "";
 	document.getElementById( "viewModeROT" ).checked = "";
-	
+
 	// RoT Tracker
 	target = document.getElementById( "rotTimerList" );
-	
+
 	for ( var i = 0; i < 10; ++i )
 	{
 		elem1 = document.createElement( "div" );
 		elem1.innerHTML = "<input id=\"timer" + i + "_name\" type=\"text\" maxlength=\"40\"> <input type=\"button\" value=\"Set Name\" onclick=\"setRoTName( " + i + " )\"> <input type=\"button\" value=\"Clear\" onclick=\"clearRoT( " + i + " )\"> <input type=\"button\" value=\"Refresh\" onclick=\"refreshRoT( " + i + " )\"> <input type=\"text\" class=\"text\" id=\"timer" + i + "_value\" readonly=\"readonly\">";
 		target.appendChild( elem1 );
 	}
-	
+
 	loadRoT();
 }
 
@@ -516,18 +516,18 @@ function loadRoT()
 		try
 		{
 			const objVal = window.localStorage.getItem( "rotTimers" );
-			
+
 			if ( objVal )
 			{
 				rotTimers = JSON.parse( objVal );
-				
+
 				for ( var i = 0; i < rotTimers.length; ++i )
 				{
 					if ( !rotTimers[i] )
 						continue;
-					
+
 					const elem = document.getElementById( "timer" + i + "_name" );
-					
+
 					if ( elem )
 						elem.value = rotTimers[i].name;
 				}
@@ -536,7 +536,7 @@ function loadRoT()
 		catch
 		{
 		}
-		
+
 		if ( rotTimers == null || rotTimers.length == undefined )
 			rotTimers = [];
 	}
@@ -551,22 +551,22 @@ function saveRoT()
 function setRoTName( index )
 {
 	const newName = document.getElementById( "timer" + index + "_name" ).value;
-	
+
 	if ( !rotTimers[index] )
 		rotTimers[index] = { "name": newName, "last": 0 };
 	else
 		rotTimers[index].name = newName;
-	
+
 	saveRoT();
 }
 
 function clearRoT( index )
 {
 	rotTimers[index] = null;
-	
+
 	document.getElementById( "timer" + index + "_name" ).value = "";
 	document.getElementById( "timer" + index + "_value" ).value = "";
-	
+
 	saveRoT();
 }
 
@@ -574,7 +574,7 @@ function refreshRoT( index )
 {
 	const newName = document.getElementById( "timer" + index + "_name" ).value;
 	const newLast = new Date().valueOf();
-	
+
 	if ( !rotTimers[index] )
 	{
 		rotTimers[index] = { "name": newName, "last": newLast };
@@ -584,7 +584,7 @@ function refreshRoT( index )
 		rotTimers[index].name = newName;
 		rotTimers[index].last = newLast;
 	}
-	
+
 	updateRoT();
 	saveRoT();
 }
@@ -611,7 +611,7 @@ function formatRoTTime( seconds )
 function getRoTClassName( seconds )
 {
 	const mins = Math.floor( seconds / 60 );
-	
+
 	if ( mins >= 60 )
 		return "green";
 	else if ( mins >= 40 )
@@ -625,19 +625,19 @@ function getRoTClassName( seconds )
 function updateRoT()
 {
 	const now = new Date();
-	
+
 	for ( var i = 0; i < rotTimers.length; ++i )
 	{
 		if ( !rotTimers[i] )
 			continue;
-		
+
 		const elem = document.getElementById( "timer" + i + "_value" );
-		
+
 		if ( elem && rotTimers[i].last > 0 )
 		{
 			const secs = ( now - rotTimers[i].last ) / 1000;
 			const [ timeCode, timeText ] = formatRoTTime( secs );
-			
+
 			if ( !elem.dataset.lastTime || elem.dataset.lastTime != timeCode )
 			{
 				elem.dataset.lastTime = timeCode;

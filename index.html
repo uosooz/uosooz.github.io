@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <title>UO:SP Moongate Monitor</title>
+<link rel="icon" type="image/png" href="favicon.png">
 <meta name="viewport" content="width=650, initial-scale=1">
 <meta property="og:title" content="UO:SP Moongate Monitor">
 <meta property="og:description" content="View the moongate destination cycles of UO:Siege Perilous in real-time.">
 <meta property="og:image" content="https://uosooz.github.io/images/uosp_logo.png">
-<!-- TODO: Move style to .css file -->
 <style type="text/css">
 body
 {
@@ -104,13 +104,32 @@ input
 	color: #fff;
 }
 
+.red
+{
+	color: #f00;
+}
+
+.orange
+{
+	color: #f80;
+}
+
+.yellow
+{
+	color: #ff0;
+}
+
+.green
+{
+	color: #0f0;
+}
+
 .footer
 {
 	margin-top: 25px;
 	font-size: 0.9em;
 }
 </style>
-<!-- TODO: Move script to .js file -->
 <script type="text/javascript">
 var moongates = [
 	{ name: "Britain", gateID: 0, xLoc: 1336, yLoc: 1997 },
@@ -589,6 +608,20 @@ function formatRoTTime( seconds )
 	}
 }
 
+function getRoTClassName( seconds )
+{
+	const mins = Math.floor( seconds / 60 );
+	
+	if ( mins >= 60 )
+		return "green";
+	else if ( mins >= 40 )
+		return "yellow";
+	else if ( mins >= 20 )
+		return "orange";
+	else
+		return "red";
+}
+
 function updateRoT()
 {
 	const now = new Date();
@@ -602,12 +635,14 @@ function updateRoT()
 		
 		if ( elem && rotTimers[i].last > 0 )
 		{
-			const [ timeCode, timeText ] = formatRoTTime( ( now - rotTimers[i].last ) / 1000 );
+			const secs = ( now - rotTimers[i].last ) / 1000;
+			const [ timeCode, timeText ] = formatRoTTime( secs );
 			
 			if ( !elem.dataset.lastTime || elem.dataset.lastTime != timeCode )
 			{
 				elem.dataset.lastTime = timeCode;
 				elem.value = timeText + " ago";
+				elem.className = "text " + getRoTClassName( secs );
 			}
 		}
 	}

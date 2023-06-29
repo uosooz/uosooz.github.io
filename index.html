@@ -67,7 +67,7 @@ td
 	font-size: 0.8em;
 }
 
-#mapCanvas
+.mapCanvas
 {
 	width: 640px;
 	height: 512px;
@@ -122,6 +122,24 @@ input
 .green
 {
 	color: #0f0;
+}
+
+#locLineX
+{
+	position: absolute;
+	height: 100%;
+	width: 1px;
+	background-color: rgba(0, 255, 0, 0.6);
+	padding: 0;
+}
+
+#locLineY
+{
+	position: absolute;
+	width: 100%;
+	height: 1px;
+	background-color: rgba(0, 255, 0, 0.6);
+	padding: 0;
 }
 
 .footer
@@ -456,7 +474,7 @@ function build()
 	}
 
 	// Fill Map View
-	target = document.getElementById( "mapCanvas" );
+	target = document.getElementById( "moongateMap" );
 
 	for ( var i = 0; i < moongates.length; ++i )
 	{
@@ -485,6 +503,7 @@ function build()
 	document.getElementById( "viewModeTable" ).checked = "checked";
 	document.getElementById( "viewModeMap" ).checked = "";
 	document.getElementById( "viewModeROT" ).checked = "";
+	document.getElementById( "viewModeLoc" ).checked = "";
 
 	// RoT Tracker
 	target = document.getElementById( "rotTimerList" );
@@ -505,6 +524,7 @@ function setViewMode( mode )
 	document.getElementById( "mapView" ).style.display = ( mode == 1 ) ? "inherit" : "none";
 	document.getElementById( "moongatesExtra" ).style.display = ( mode == 0 || mode == 1 ) ? "inherit" : "none";
 	document.getElementById( "rotView" ).style.display = ( mode == 2 ) ? "inherit" : "none";
+	document.getElementById( "locView" ).style.display = ( mode == 3 ) ? "inherit" : "none";
 }
 
 var rotTimers = [];
@@ -647,6 +667,56 @@ function updateRoT()
 		}
 	}
 }
+
+function sextantKeydown( e )
+{
+	if ( e.key == "Enter" )
+		sextantConvert();
+}
+
+function sextantConvert()
+{
+	var str = document.getElementById( "locSextant" ).value;
+
+	str = str.replace( /[^0-9nesw]/ig, " " );
+	str = str.replace( /\s+/g, " " ).trim().toUpperCase();
+
+	var split = str.split( " " );
+
+	if ( split.length != 6
+		|| isNaN( split[0] = parseInt( split[0] ) )
+		|| isNaN( split[1] = parseInt( split[1] ) )
+		|| ( split[2] != "N" && split[2] != "S" )
+		|| isNaN( split[3] = parseInt( split[3] ) )
+		|| isNaN( split[4] = parseInt( split[4] ) )
+		|| ( split[5] != "E" && split[5] != "W" ) )
+	{
+		alert( "Invalid coordinates.\r\n\r\nPlease ensure your entered coordinates are correctly formatted (for example: \"1 2 S 3 4 E\")." );
+		return;
+	}
+
+	var degS = split[0] + split[1] / 60;
+	var degE = split[3] + split[4] / 60;
+
+	if ( split[2] == "N" ) degS *= -1;
+	if ( split[5] == "W" ) degE *= -1;
+
+	var x = ( 1323 + Math.round( degE / 360 * 5120 ) ) % 5120;
+	var y = ( 1624 + Math.round( degS / 360 * 4096 ) ) % 4096;
+
+	if ( x < 0 ) x += 5120;
+	if ( y < 0 ) y += 4096;
+
+	document.getElementById( "locValueXY" ).innerHTML = x + ", " + y;
+
+	document.getElementById( "locLineX" ).style.left = Math.floor( x / 8 ) + "px";
+	document.getElementById( "locLineY" ).style.top = Math.floor( y / 8 ) + "px";
+}
+
+function sextantCopy()
+{
+	navigator.clipboard.writeText( document.getElementById( "locValueXY" ).innerHTML );
+}
 </script>
 </head>
 <body onload="build(); startUpdate()">
@@ -665,7 +735,10 @@ function updateRoT()
 	&middot;
 	<input type="button" onclick="doUpdate()" value="Update now">
 	<br>
-	<label><input type="radio" id="viewModeTable" name="viewMode" value="0" onchange="setViewMode( 0 )" checked="checked"> Table View</label> <label><input type="radio" id="viewModeMap" name="viewMode" value="1" onchange="setViewMode( 1 )"> Map View</label> <label><input type="radio" id="viewModeROT" name="viewMode" value="2" onchange="setViewMode( 2 )"> RoT Tracker</label>
+	<label><input type="radio" id="viewModeTable" name="viewMode" value="0" onchange="setViewMode( 0 )" checked="checked"> Table View</label>
+	<label><input type="radio" id="viewModeMap" name="viewMode" value="1" onchange="setViewMode( 1 )"> Map View</label>
+	<label><input type="radio" id="viewModeROT" name="viewMode" value="2" onchange="setViewMode( 2 )"> RoT Tracker</label>
+	<label><input type="radio" id="viewModeLoc" name="viewMode" value="3" onchange="setViewMode( 3 )"> Sextant Coordinates</label>
 </div>
 
 <div id="overview">
@@ -683,7 +756,7 @@ function updateRoT()
 </div>
 
 <div id="mapView" style="display: none">
-<div id="mapCanvas">
+<div id="moongateMap" class="mapCanvas">
 </div>
 </div>
 
@@ -726,6 +799,15 @@ function updateRoT()
 <div class="footer">
 <p>0-69.9: No delay<br>70-79.9: 20 minute delay<br>80-98.9: 40 minute delay<br>99-100: 60 minute delay</p>
 <p>Timer data is saved locally in your browser.</p>
+</div>
+</div>
+
+<div id="locView" style="display: none">
+<div><label>Sextant coordinates: <input type="text" id="locSextant" placeholder="0 0 S 0 0 E" onkeydown="sextantKeydown(event)"></label> <input type="button" value="Convert" onclick="sextantConvert()"></div>
+<div>X/Y: <span id="locValueXY">0, 0</span> <input type="button" value="Copy to clipboard" onclick="sextantCopy()"></div>
+<div id="locMap" class="mapCanvas">
+<div id="locLineX" style="left: 0px"></div>
+<div id="locLineY" style="top: 0px"></div>
 </div>
 </div>
 
